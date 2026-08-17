@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./outcomeLabels";
 export * from "./handicap";
 export * from "./holeOutcome";
 export * from "./ranking";
