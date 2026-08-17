@@ -2,6 +2,7 @@
 
 import { useAppData } from "@/lib/store/AppDataContext";
 import { updateRound, upsertHole } from "@/lib/supabase/data";
+import { roundLabel } from "@/lib/supabase/mappers";
 import { useEffect, useMemo, useState } from "react";
 
 interface HoleForm {
@@ -108,7 +109,7 @@ export function CoursesTab() {
               r.id === activeRoundId ? "bg-white shadow text-green-700" : "text-neutral-600"
             }`}
           >
-            Round {r.round_number}
+            {roundLabel(r)}
           </button>
         ))}
       </div>

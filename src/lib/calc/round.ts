@@ -1,5 +1,6 @@
 import { courseHandicap, playingHandicaps, strokesForHole } from "./handicap";
 import { classifyHoleOutcome } from "./holeOutcome";
+import { placementPointDefaultForRank } from "./placementDefaults";
 import { rankWithTies } from "./ranking";
 import {
   CourseDef,
@@ -11,14 +12,16 @@ import {
   ScoringBreakdownLine,
 } from "./types";
 
+/**
+ * Falls back to the default pattern for any rank beyond what's currently
+ * saved — e.g. a player was just added but the admin hasn't re-opened
+ * Scoring config to save a longer list yet.
+ */
 function placementValueAtRank(
   rank: number,
-  values: GameConfig["placementPoints"]
+  placementPointsByPlace: GameConfig["placementPointsByPlace"]
 ): number {
-  if (rank === 1) return values.first;
-  if (rank === 2) return values.second;
-  if (rank === 3) return values.third;
-  return values.fourthPlus;
+  return placementPointsByPlace[rank - 1] ?? placementPointDefaultForRank(rank);
 }
 
 /**
@@ -137,7 +140,7 @@ export function calculateRound(params: {
   const ranked = rankWithTies(
     active,
     (a, b) => a.netScore - b.netScore || b.golfPoints - a.golfPoints,
-    (rank) => placementValueAtRank(rank, config.placementPoints)
+    (rank) => placementValueAtRank(rank, config.placementPointsByPlace)
   );
   const byPlayerId = new Map(ranked.map((r) => [r.item.playerId, r]));
 

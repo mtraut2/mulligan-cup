@@ -99,10 +99,10 @@ create table if not exists game_config (
   money_lost_ball numeric not null default 1,
   money_ladies_tee numeric not null default 5,
   money_triple_plus numeric not null default 1,
-  placement_first numeric not null default 16,
-  placement_second numeric not null default 14,
-  placement_third numeric not null default 12,
-  placement_fourth_plus numeric not null default 10,
+  -- Ordered by place: index 0 = 1st place's points, index 1 = 2nd, etc.
+  -- One entry per player in the field — resized in the app as the roster
+  -- grows/shrinks, not fixed to a handful of tiers.
+  placement_points jsonb not null default '[16,14,12,10,9,8,7,6,5,4,3,2,1]'::jsonb,
   buy_in numeric not null default 50,
   admin_passcode text not null default '1234',
   updated_at timestamptz not null default now()

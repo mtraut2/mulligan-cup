@@ -9,6 +9,7 @@ import {
   removeGroupMember,
   updateGroupLabel,
 } from "@/lib/supabase/data";
+import { roundLabel } from "@/lib/supabase/mappers";
 import { useMemo, useState } from "react";
 
 export function GroupsTab() {
@@ -65,7 +66,7 @@ export function GroupsTab() {
               r.id === activeRoundId ? "bg-white shadow text-green-700" : "text-neutral-600"
             }`}
           >
-            Round {r.round_number}
+            {roundLabel(r)}
           </button>
         ))}
       </div>
@@ -83,7 +84,7 @@ export function GroupsTab() {
             disabled={busy}
             className="flex-1 rounded-lg border border-neutral-300 py-2 text-sm font-medium text-neutral-600"
           >
-            Copy Round {previousRound.round_number}
+            Copy {roundLabel(previousRound)}
           </button>
         )}
       </div>

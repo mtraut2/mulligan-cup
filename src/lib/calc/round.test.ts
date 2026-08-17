@@ -1,6 +1,29 @@
 import { describe, expect, it } from "vitest";
+import { defaultPlacementPoints, placementPointDefaultForRank } from "./placementDefaults";
 import { calculateRound } from "./round";
 import { CourseDef, DEFAULT_GAME_CONFIG, HoleScoreInput, PlayerDef } from "./types";
+
+describe("placementPointDefaultForRank / defaultPlacementPoints", () => {
+  it("matches the fixed 1st-4th tiers", () => {
+    expect(placementPointDefaultForRank(1)).toBe(16);
+    expect(placementPointDefaultForRank(2)).toBe(14);
+    expect(placementPointDefaultForRank(3)).toBe(12);
+    expect(placementPointDefaultForRank(4)).toBe(10);
+  });
+
+  it("descends by 1 per place from rank 5, floored at 1", () => {
+    expect(placementPointDefaultForRank(5)).toBe(9);
+    expect(placementPointDefaultForRank(6)).toBe(8);
+    expect(placementPointDefaultForRank(13)).toBe(1);
+    expect(placementPointDefaultForRank(14)).toBe(1); // floored, does not go negative
+    expect(placementPointDefaultForRank(20)).toBe(1);
+  });
+
+  it("generates an array of the requested length", () => {
+    expect(defaultPlacementPoints(6)).toEqual([16, 14, 12, 10, 9, 8]);
+    expect(defaultPlacementPoints(0)).toEqual([]);
+  });
+});
 
 // 18 holes, all par 4, hole handicap rank == hole number. Rating == par and
 // slope == 113 so Course Handicap equals raw handicap exactly, keeping the
@@ -177,6 +200,40 @@ describe("calculateRound — placement tie-break", () => {
     expect(byId.i.placementPoints).toBe(14);
     expect(byId.j.tied).toBe(false);
     expect(byId.i.tied).toBe(false);
+  });
+});
+
+describe("calculateRound — placement points array shorter than the field", () => {
+  it("falls back to the default pattern for ranks beyond the saved array", () => {
+    // A player was just added in Players but the admin hasn't re-opened
+    // Scoring to save a longer placementPointsByPlace list yet — the 3rd
+    // place player should still get a sensible value, not undefined/NaN.
+    const players: PlayerDef[] = [
+      { id: "scratch", name: "Scratch (0)", handicap: 0 },
+      { id: "mid", name: "Mid (9)", handicap: 9 },
+      { id: "high", name: "High (18)", handicap: 18 },
+    ];
+    const scoresByPlayer: Record<string, HoleScoreInput[]> = {
+      scratch: flatScores(4),
+      mid: flatScores(5),
+      high: flatScores(6),
+    };
+    const shortConfig = { ...DEFAULT_GAME_CONFIG, placementPointsByPlace: [20, 15] };
+
+    const summaries = calculateRound({
+      players,
+      course,
+      scoresByPlayer,
+      config: shortConfig,
+    });
+    const byId = Object.fromEntries(summaries.map((s) => [s.playerId, s]));
+
+    expect(byId.scratch.place).toBe(1);
+    expect(byId.scratch.placementPoints).toBe(20); // from the saved array
+    expect(byId.mid.place).toBe(2);
+    expect(byId.mid.placementPoints).toBe(15); // from the saved array
+    expect(byId.high.place).toBe(3);
+    expect(byId.high.placementPoints).toBe(placementPointDefaultForRank(3)); // fallback: 12
   });
 });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { calculateRound, calculateWeekend, PlayerWeekendSummary } from "@/lib/calc";
+import { formatMoney, formatSignedMoney } from "@/lib/format";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { groupScoresByPlayer, toCourseDef, toGameConfig, toPlayerDef } from "@/lib/supabase/mappers";
 import { useMemo } from "react";
@@ -51,9 +52,9 @@ export default function TotalsPage() {
 
       <div className="rounded-xl bg-green-700 p-4 text-white">
         <p className="text-xs uppercase tracking-wide text-green-100">Total Pot</p>
-        <p className="text-3xl font-bold">${pot.toFixed(2)}</p>
+        <p className="text-3xl font-bold">{formatMoney(pot)}</p>
         <p className="mt-1 text-xs text-green-100">
-          ${gameConfig?.buy_in ?? 0} buy-in × {players.length} players + money owed
+          {formatMoney(gameConfig?.buy_in ?? 0)} buy-in × {players.length} players + money owed
         </p>
       </div>
 
@@ -80,15 +81,14 @@ export default function TotalsPage() {
                 <td className="px-2 py-2">{playerName(w.playerId)}</td>
                 <td className="px-2 py-2 text-right">{w.roundsPlayed}/3</td>
                 <td className="px-2 py-2 text-right font-semibold">{w.totalPoints}</td>
-                <td className="px-2 py-2 text-right">${w.totalMoneyOwed}</td>
-                <td className="px-2 py-2 text-right">${w.payout.toFixed(2)}</td>
+                <td className="px-2 py-2 text-right">{formatMoney(w.totalMoneyOwed)}</td>
+                <td className="px-2 py-2 text-right">{formatMoney(w.payout)}</td>
                 <td
                   className={`px-2 py-2 text-right font-semibold ${
                     w.netEarnings >= 0 ? "text-green-700" : "text-red-600"
                   }`}
                 >
-                  {w.netEarnings >= 0 ? "+" : ""}
-                  {w.netEarnings.toFixed(2)}
+                  {formatSignedMoney(w.netEarnings)}
                 </td>
               </tr>
             ))}

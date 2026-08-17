@@ -1,6 +1,11 @@
 import { CourseDef, GameConfig, HoleScoreInput, PlayerDef } from "@/lib/calc";
 import { GameConfigRow, HoleRow, HoleScoreRow, PlayerRow, RoundRow } from "./types";
 
+export function roundLabel(round: RoundRow): string {
+  const name = round.course_name?.trim();
+  return name ? name : `Round ${round.round_number}`;
+}
+
 export function toPlayerDef(row: PlayerRow): PlayerDef {
   return { id: row.id, name: row.name, handicap: row.handicap };
 }
@@ -38,12 +43,7 @@ export function toGameConfig(row: GameConfigRow): GameConfig {
       ladiesTee: row.money_ladies_tee,
       triplePlus: row.money_triple_plus,
     },
-    placementPoints: {
-      first: row.placement_first,
-      second: row.placement_second,
-      third: row.placement_third,
-      fourthPlus: row.placement_fourth_plus,
-    },
+    placementPointsByPlace: Array.isArray(row.placement_points) ? row.placement_points : [],
     buyIn: row.buy_in,
   };
 }

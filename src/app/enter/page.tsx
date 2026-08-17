@@ -8,7 +8,7 @@ import {
   strokesForHole,
 } from "@/lib/calc";
 import { useAppData } from "@/lib/store/AppDataContext";
-import { toCourseDef } from "@/lib/supabase/mappers";
+import { roundLabel, toCourseDef } from "@/lib/supabase/mappers";
 import { upsertHoleScore } from "@/lib/supabase/data";
 import { useEffect, useMemo, useState } from "react";
 
@@ -157,7 +157,7 @@ export default function EnterPage() {
               r.id === roundId ? "bg-white shadow text-green-700" : "text-neutral-600"
             }`}
           >
-            Round {r.round_number}
+            {roundLabel(r)}
           </button>
         ))}
       </div>

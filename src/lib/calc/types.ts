@@ -1,3 +1,5 @@
+import { defaultPlacementPoints } from "./placementDefaults";
+
 export type HoleOutcomeType =
   | "eagle"
   | "birdie"
@@ -49,12 +51,8 @@ export interface GameConfig {
     ladiesTee: number;
     triplePlus: number;
   };
-  placementPoints: {
-    first: number;
-    second: number;
-    third: number;
-    fourthPlus: number;
-  };
+  /** Ordered by place — index 0 is 1st place's points, index 1 is 2nd, etc. */
+  placementPointsByPlace: number[];
   buyIn: number;
 }
 
@@ -73,12 +71,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     ladiesTee: 5,
     triplePlus: 1,
   },
-  placementPoints: {
-    first: 16,
-    second: 14,
-    third: 12,
-    fourthPlus: 10,
-  },
+  placementPointsByPlace: defaultPlacementPoints(15),
   buyIn: 50,
 };
 

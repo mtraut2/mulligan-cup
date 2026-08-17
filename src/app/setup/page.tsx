@@ -39,49 +39,21 @@ export default function SetupPage() {
   if (loading) return <div className="p-4 text-center text-neutral-500">Loading…</div>;
   if (error) return <div className="p-4 text-center text-red-600">{error}</div>;
 
-  if (!unlocked) {
-    return (
-      <div className="flex flex-col gap-4 p-4">
-        <h1 className="text-lg font-bold">Admin Setup</h1>
-        <p className="text-sm text-neutral-500">
-          This area is for course setup, cart assignments, the player roster, and scoring rules.
-          Enter the admin passcode to continue.
-        </p>
-        <form onSubmit={handleUnlock} className="flex flex-col gap-2">
-          <input
-            type="password"
-            inputMode="numeric"
-            autoFocus
-            value={passcodeInput}
-            onChange={(e) => setPasscodeInput(e.target.value)}
-            placeholder="Passcode"
-            className="rounded-lg border border-neutral-300 p-2.5 text-base"
-          />
-          {passcodeError && <p className="text-sm text-red-600">{passcodeError}</p>}
-          <button
-            type="submit"
-            className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white"
-          >
-            Unlock
-          </button>
-        </form>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-3 p-3">
       <div className="flex items-center justify-between px-1">
-        <h1 className="text-lg font-bold">Admin Setup</h1>
-        <button
-          onClick={() => {
-            window.localStorage.removeItem(UNLOCK_KEY);
-            setUnlocked(false);
-          }}
-          className="text-xs text-neutral-400 underline"
-        >
-          Lock
-        </button>
+        <h1 className="text-lg font-bold">Setup</h1>
+        {unlocked && (
+          <button
+            onClick={() => {
+              window.localStorage.removeItem(UNLOCK_KEY);
+              setUnlocked(false);
+            }}
+            className="text-xs text-neutral-400 underline"
+          >
+            Lock
+          </button>
+        )}
       </div>
 
       <div className="flex gap-1 overflow-x-auto rounded-lg bg-neutral-100 p-1">
@@ -93,7 +65,7 @@ export default function SetupPage() {
               t === tab ? "bg-white shadow text-green-700" : "text-neutral-600"
             }`}
           >
-            {t}
+            {t === "Scoring" && !unlocked ? "🔒 Scoring" : t}
           </button>
         ))}
       </div>
@@ -101,7 +73,35 @@ export default function SetupPage() {
       {tab === "Courses" && <CoursesTab />}
       {tab === "Groups" && <GroupsTab />}
       {tab === "Players" && <PlayersTab />}
-      {tab === "Scoring" && <ConfigTab />}
+      {tab === "Scoring" &&
+        (unlocked ? (
+          <ConfigTab />
+        ) : (
+          <div className="flex flex-col gap-4 rounded-xl border border-neutral-200 p-4">
+            <p className="text-sm text-neutral-500">
+              Scoring config sets the point values and money penalties for the whole group —
+              enter the admin passcode to edit it.
+            </p>
+            <form onSubmit={handleUnlock} className="flex flex-col gap-2">
+              <input
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                value={passcodeInput}
+                onChange={(e) => setPasscodeInput(e.target.value)}
+                placeholder="Passcode"
+                className="rounded-lg border border-neutral-300 p-2.5 text-base"
+              />
+              {passcodeError && <p className="text-sm text-red-600">{passcodeError}</p>}
+              <button
+                type="submit"
+                className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white"
+              >
+                Unlock
+              </button>
+            </form>
+          </div>
+        ))}
     </div>
   );
 }

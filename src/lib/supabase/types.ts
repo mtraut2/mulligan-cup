@@ -60,10 +60,8 @@ export interface GameConfigRow {
   money_lost_ball: number;
   money_ladies_tee: number;
   money_triple_plus: number;
-  placement_first: number;
-  placement_second: number;
-  placement_third: number;
-  placement_fourth_plus: number;
+  /** Ordered by place — index 0 is 1st place's points, index 1 is 2nd, etc. */
+  placement_points: number[];
   buy_in: number;
   admin_passcode: string;
   updated_at: string;

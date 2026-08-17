@@ -1,8 +1,15 @@
 "use client";
 
 import { calculateRound, PlayerRoundSummary } from "@/lib/calc";
+import { formatMoney } from "@/lib/format";
 import { useAppData } from "@/lib/store/AppDataContext";
-import { groupScoresByPlayer, toCourseDef, toGameConfig, toPlayerDef } from "@/lib/supabase/mappers";
+import {
+  groupScoresByPlayer,
+  roundLabel,
+  toCourseDef,
+  toGameConfig,
+  toPlayerDef,
+} from "@/lib/supabase/mappers";
 import { Fragment, useMemo, useState } from "react";
 
 export default function RoundPage() {
@@ -56,7 +63,7 @@ export default function RoundPage() {
               r.id === activeRoundId ? "bg-white shadow text-green-700" : "text-neutral-600"
             }`}
           >
-            Round {r.round_number}
+            {roundLabel(r)}
           </button>
         ))}
       </div>
@@ -104,7 +111,7 @@ export default function RoundPage() {
                   <td className="px-2 py-2 text-right">{s.golfPoints}</td>
                   <td className="px-2 py-2 text-right">{s.placementPoints}</td>
                   <td className="px-2 py-2 text-right font-semibold">{s.totalPoints}</td>
-                  <td className="px-2 py-2 text-right">${s.moneyOwed}</td>
+                  <td className="px-2 py-2 text-right">{formatMoney(s.moneyOwed)}</td>
                 </tr>
                 {expandedPlayerId === s.playerId && (
                   <tr className="border-t border-neutral-100 bg-neutral-50">
@@ -140,9 +147,9 @@ export default function RoundPage() {
                               .map((l) => (
                                 <li key={l.category} className="flex justify-between">
                                   <span>
-                                    {l.category} ({l.count} × ${l.valueEach})
+                                    {l.category} ({l.count} × {formatMoney(l.valueEach)})
                                   </span>
-                                  <span className="font-medium">${l.subtotal}</span>
+                                  <span className="font-medium">{formatMoney(l.subtotal)}</span>
                                 </li>
                               ))}
                             {s.moneyOwedBreakdown.every((l) => l.count === 0) && (
