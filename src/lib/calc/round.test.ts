@@ -204,3 +204,34 @@ describe("calculateRound — money owed", () => {
     expect(summary.moneyOwed).toBe(1 + 1 + 5 + 1); // threePutt + lostBall + ladiesTee + triplePlus
   });
 });
+
+describe("calculateRound — untouched round", () => {
+  it("does not rank or award placement points to a player with zero holes entered", () => {
+    // Regression test: a high-handicap player with 0 holes entered has
+    // totalScore 0, which nets to a large *negative* net score (0 minus
+    // their positive playing handicap) — without an explicit guard this
+    // ranks them 1st in a round they haven't played at all.
+    const players: PlayerDef[] = [
+      { id: "scratch", name: "Scratch (0)", handicap: 0 },
+      { id: "high", name: "High (18)", handicap: 18 },
+    ];
+    const scoresByPlayer: Record<string, HoleScoreInput[]> = {
+      scratch: flatScores(4),
+      high: [], // hasn't entered anything this round
+    };
+    const summaries = calculateRound({
+      players,
+      course,
+      scoresByPlayer,
+      config: DEFAULT_GAME_CONFIG,
+    });
+    const byId = Object.fromEntries(summaries.map((s) => [s.playerId, s]));
+
+    expect(byId.high.holesEntered).toBe(0);
+    expect(byId.high.placementPoints).toBe(0);
+    expect(byId.high.totalPoints).toBe(0);
+    expect(byId.high.place).toBe(2); // ranked after the one active player
+    expect(byId.scratch.place).toBe(1);
+    expect(byId.scratch.placementPoints).toBe(16);
+  });
+});

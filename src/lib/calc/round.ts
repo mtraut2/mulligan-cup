@@ -130,16 +130,28 @@ export function calculateRound(params: {
     };
   });
 
+  // Only rank players who have actually entered at least one hole this
+  // round — otherwise an untouched round (totalScore 0) can produce a
+  // negative net score for a high-handicap player and rank them 1st.
+  const active = preliminary.filter((p) => p.holesEntered > 0);
   const ranked = rankWithTies(
-    preliminary,
+    active,
     (a, b) => a.netScore - b.netScore || b.golfPoints - a.golfPoints,
     (rank) => placementValueAtRank(rank, config.placementPoints)
   );
-
   const byPlayerId = new Map(ranked.map((r) => [r.item.playerId, r]));
 
   return preliminary.map((p) => {
-    const r = byPlayerId.get(p.playerId)!;
+    const r = byPlayerId.get(p.playerId);
+    if (!r) {
+      return {
+        ...p,
+        placementPoints: 0,
+        totalPoints: p.golfPoints,
+        place: active.length + 1,
+        tied: false,
+      };
+    }
     return {
       ...p,
       placementPoints: r.value,

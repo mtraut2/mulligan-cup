@@ -151,6 +151,12 @@ end $$;
 -- ---------------------------------------------------------------------
 do $$
 begin
+  alter publication supabase_realtime add table players;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
   alter publication supabase_realtime add table hole_scores;
 exception when duplicate_object then null;
 end $$;

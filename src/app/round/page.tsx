@@ -28,8 +28,12 @@ export default function RoundPage() {
       course,
       scoresByPlayer,
       config: toGameConfig(gameConfig),
-    }).sort((a, b) => a.place - b.place);
+    })
+      .filter((s) => s.holesEntered > 0)
+      .sort((a, b) => a.place - b.place);
   }, [round, holes, holeScores, players, gameConfig]);
+
+  const notStartedCount = players.length - summaries.length;
 
   const playerName = (id: string) => players.find((p) => p.id === id)?.name ?? "—";
 
@@ -60,6 +64,12 @@ export default function RoundPage() {
       {round && (
         <p className="px-1 text-sm text-neutral-500">
           {round.course_name} · Par {round.course_par}
+          {notStartedCount > 0 && summaries.length > 0 && (
+            <span className="text-neutral-400">
+              {" "}
+              · {notStartedCount} player{notStartedCount > 1 ? "s" : ""} not started
+            </span>
+          )}
         </p>
       )}
 
