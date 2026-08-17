@@ -33,6 +33,21 @@ this repo already has commits.)
 4. Click **Deploy**. You'll get a URL like `mulligan-cup-xyz.vercel.app` —
    that's the link to share with the group (text it, or add to a group chat).
 
+**Gotcha (already resolved, but good to know):** if the Vercel project lives under a
+Team scope (e.g. an org like "Larson Inc") rather than a personal account, the Hobby
+plan blocks deploys — including manual CLI deploys — whenever the Git commit author
+isn't a recognized contributor on a **private** repo ("The Hobby Plan does not
+support collaboration for private repositories"). This repo is public specifically
+to avoid that restriction. If it ever needs to go private again, either upgrade the
+Vercel team to Pro, or move the project to a personal (non-team) Vercel account.
+
+**Manual deploy without waiting on auto-deploy:** from the project folder,
+```bash
+npx vercel login    # first time only — opens a browser to approve
+npx vercel link     # first time only — links this folder to the Vercel project
+npx vercel --prod
+```
+
 Every future `git push` to `master` auto-redeploys. To use a custom domain,
 add it under the Vercel project's **Domains** tab (optional).
 
