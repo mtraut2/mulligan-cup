@@ -41,7 +41,7 @@ function ordinal(n: number): string {
   }
 }
 
-export function ConfigTab() {
+export function ConfigTab({ locked }: { locked: boolean }) {
   const { gameConfig, players } = useAppData();
   const [form, setForm] = useState<Record<string, string>>({});
   const [placements, setPlacements] = useState<string[]>([]);
@@ -109,11 +109,12 @@ export function ConfigTab() {
               <label key={f.key} className="flex items-center justify-between gap-2 text-sm">
                 {f.label}
                 <input
+                  disabled={locked}
                   type="number"
                   step="0.5"
                   value={form[f.key] ?? ""}
                   onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                  className="w-16 rounded-lg border border-neutral-300 p-1.5 text-right"
+                  className="w-16 rounded-lg border border-neutral-300 p-1.5 text-right disabled:bg-neutral-100 disabled:text-neutral-400"
                 />
               </label>
             ))}
@@ -137,11 +138,12 @@ export function ConfigTab() {
                 <label key={i} className="flex items-center justify-between gap-2 text-sm">
                   {ordinal(i + 1)} Place
                   <input
+                    disabled={locked}
                     type="number"
                     step="1"
                     value={value}
                     onChange={(e) => updatePlacement(i, e.target.value)}
-                    className="w-16 rounded-lg border border-neutral-300 p-1.5 text-right"
+                    className="w-16 rounded-lg border border-neutral-300 p-1.5 text-right disabled:bg-neutral-100 disabled:text-neutral-400"
                   />
                 </label>
               ))}
@@ -160,11 +162,12 @@ export function ConfigTab() {
             <span className="flex items-center gap-1">
               <span className="text-neutral-400">$</span>
               <input
+                disabled={locked}
                 type="number"
                 step="1"
                 value={form.buy_in ?? ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, buy_in: e.target.value }))}
-                className="w-16 rounded-lg border border-neutral-300 p-1.5 text-right"
+                className="w-16 rounded-lg border border-neutral-300 p-1.5 text-right disabled:bg-neutral-100 disabled:text-neutral-400"
               />
             </span>
           </label>
@@ -179,11 +182,12 @@ export function ConfigTab() {
                 <span className="flex items-center gap-1">
                   <span className="text-neutral-400">$</span>
                   <input
+                    disabled={locked}
                     type="number"
                     step="0.5"
                     value={form[f.key] ?? ""}
                     onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                    className="w-16 rounded-lg border border-neutral-300 p-1.5 text-right"
+                    className="w-16 rounded-lg border border-neutral-300 p-1.5 text-right disabled:bg-neutral-100 disabled:text-neutral-400"
                   />
                 </span>
               </label>
@@ -205,8 +209,9 @@ export function ConfigTab() {
             type="button"
             role="switch"
             aria-checked={totalsVisible}
+            disabled={locked}
             onClick={() => setTotalsVisible((v) => !v)}
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
               totalsVisible ? "bg-green-700" : "bg-neutral-300"
             }`}
           >
@@ -221,11 +226,17 @@ export function ConfigTab() {
 
       <div className="lg:max-w-md">
         <h2 className="mb-1 text-sm font-semibold">Admin Passcode</h2>
-        <input
-          value={passcode}
-          onChange={(e) => setPasscode(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 p-2 text-sm"
-        />
+        {locked ? (
+          <p className="rounded-lg border border-neutral-200 bg-neutral-100 p-2 text-sm text-neutral-400">
+            🔒 Hidden while locked — unlock to view or edit.
+          </p>
+        ) : (
+          <input
+            value={passcode}
+            onChange={(e) => setPasscode(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 p-2 text-sm"
+          />
+        )}
       </div>
 
       {saveMsg && (
@@ -233,13 +244,15 @@ export function ConfigTab() {
           {saveMsg}
         </p>
       )}
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white disabled:bg-neutral-300"
-      >
-        {saving ? "Saving…" : "Save Scoring Rules"}
-      </button>
+      {!locked && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white disabled:bg-neutral-300"
+        >
+          {saving ? "Saving…" : "Save Scoring Rules"}
+        </button>
+      )}
     </div>
   );
 }

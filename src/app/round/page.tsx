@@ -86,11 +86,11 @@ export default function RoundPage() {
             <tr>
               <th className="px-2 py-2 md:px-4 md:py-3">Place</th>
               <th className="px-2 py-2 md:px-4 md:py-3">Player</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Gross</th>
               <th className="px-2 py-2 text-right md:px-4 md:py-3">Net</th>
               <th className="px-2 py-2 text-right md:px-4 md:py-3">Golf</th>
               <th className="px-2 py-2 text-right md:px-4 md:py-3">Place Pts</th>
               <th className="px-2 py-2 text-right md:px-4 md:py-3">Total</th>
-              <th className="px-2 py-2 text-right md:px-4 md:py-3">Owed</th>
             </tr>
           </thead>
           <tbody>
@@ -106,15 +106,26 @@ export default function RoundPage() {
                     {s.tied ? "T-" : ""}
                     {s.place}
                   </td>
-                  <td className="px-2 py-2 md:px-4 md:py-3">{playerName(s.playerId)}</td>
+                  <td className="px-2 py-2 md:px-4 md:py-3">
+                    <div className="flex items-center gap-1">
+                      <span>{playerName(s.playerId)}</span>
+                      <span className="text-xs text-neutral-400">({s.playingHandicap})</span>
+                      <span
+                        aria-hidden="true"
+                        className={`ml-auto shrink-0 text-neutral-400 transition-transform duration-150 ${
+                          expandedPlayerId === s.playerId ? "rotate-90" : ""
+                        }`}
+                      >
+                        ›
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-2 py-2 text-right md:px-4 md:py-3">{s.totalScore}</td>
                   <td className="px-2 py-2 text-right md:px-4 md:py-3">{s.netScore}</td>
                   <td className="px-2 py-2 text-right md:px-4 md:py-3">{s.golfPoints}</td>
                   <td className="px-2 py-2 text-right md:px-4 md:py-3">{s.placementPoints}</td>
                   <td className="px-2 py-2 text-right font-semibold md:px-4 md:py-3">
                     {s.totalPoints}
-                  </td>
-                  <td className="px-2 py-2 text-right md:px-4 md:py-3">
-                    {formatMoney(s.moneyOwed)}
                   </td>
                 </tr>
                 {expandedPlayerId === s.playerId && (

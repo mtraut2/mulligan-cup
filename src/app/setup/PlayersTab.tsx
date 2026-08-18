@@ -4,7 +4,7 @@ import { useAppData } from "@/lib/store/AppDataContext";
 import { deletePlayer, upsertPlayer } from "@/lib/supabase/data";
 import { useMemo, useState } from "react";
 
-export function PlayersTab() {
+export function PlayersTab({ locked }: { locked: boolean }) {
   const { players } = useAppData();
   const sortedPlayers = useMemo(
     () => [...players].sort((a, b) => a.name.localeCompare(b.name)),
@@ -36,15 +36,17 @@ export function PlayersTab() {
             className="flex items-center gap-2 border-b border-neutral-100 pb-2 pt-2 first:pt-0 last:border-0 last:pb-0 lg:break-inside-avoid"
           >
             <input
+              disabled={locked}
               defaultValue={p.name}
               onBlur={(e) => {
                 if (e.target.value.trim() && e.target.value !== p.name) {
                   upsertPlayer({ id: p.id, name: e.target.value.trim(), handicap: p.handicap });
                 }
               }}
-              className="flex-1 rounded-lg border border-neutral-300 p-2 text-sm"
+              className="flex-1 rounded-lg border border-neutral-300 p-2 text-sm disabled:bg-neutral-100 disabled:text-neutral-400"
             />
             <input
+              disabled={locked}
               type="number"
               step="0.1"
               defaultValue={p.handicap}
@@ -54,14 +56,16 @@ export function PlayersTab() {
                   upsertPlayer({ id: p.id, name: p.name, handicap: v });
                 }
               }}
-              className="w-16 rounded-lg border border-neutral-300 p-2 text-sm"
+              className="w-16 rounded-lg border border-neutral-300 p-2 text-sm disabled:bg-neutral-100 disabled:text-neutral-400"
             />
-            <button
-              onClick={() => deletePlayer(p.id)}
-              className="text-xs text-red-500 underline"
-            >
-              Remove
-            </button>
+            {!locked && (
+              <button
+                onClick={() => deletePlayer(p.id)}
+                className="text-xs text-red-500 underline"
+              >
+                Remove
+              </button>
+            )}
           </div>
         ))}
         {sortedPlayers.length === 0 && (
@@ -69,29 +73,31 @@ export function PlayersTab() {
         )}
       </div>
 
-      <form onSubmit={handleAdd} className="flex items-center gap-2 md:max-w-sm">
-        <input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="Name"
-          className="flex-1 rounded-lg border border-neutral-300 p-2 text-sm"
-        />
-        <input
-          value={newHandicap}
-          onChange={(e) => setNewHandicap(e.target.value)}
-          type="number"
-          step="0.1"
-          placeholder="Hcp"
-          className="w-16 rounded-lg border border-neutral-300 p-2 text-sm"
-        />
-        <button
-          type="submit"
-          disabled={adding}
-          className="rounded-lg bg-green-700 px-3 py-2 text-sm font-semibold text-white disabled:bg-neutral-300"
-        >
-          Add
-        </button>
-      </form>
+      {!locked && (
+        <form onSubmit={handleAdd} className="flex items-center gap-2 md:max-w-sm">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Name"
+            className="flex-1 rounded-lg border border-neutral-300 p-2 text-sm"
+          />
+          <input
+            value={newHandicap}
+            onChange={(e) => setNewHandicap(e.target.value)}
+            type="number"
+            step="0.1"
+            placeholder="Hcp"
+            className="w-16 rounded-lg border border-neutral-300 p-2 text-sm"
+          />
+          <button
+            type="submit"
+            disabled={adding}
+            className="rounded-lg bg-green-700 px-3 py-2 text-sm font-semibold text-white disabled:bg-neutral-300"
+          >
+            Add
+          </button>
+        </form>
+      )}
     </div>
   );
 }

@@ -11,7 +11,7 @@ interface HoleForm {
   holePar: string;
 }
 
-export function CoursesTab() {
+export function CoursesTab({ locked }: { locked: boolean }) {
   const { rounds, holes } = useAppData();
   const sortedRounds = useMemo(
     () => [...rounds].sort((a, b) => a.round_number - b.round_number),
@@ -119,37 +119,41 @@ export function CoursesTab() {
           <label className="col-span-2 flex flex-col gap-1 text-sm">
             Course Name
             <input
+              disabled={locked}
               value={courseForm.courseName}
               onChange={(e) => setCourseForm((f) => ({ ...f, courseName: e.target.value }))}
-              className="rounded-lg border border-neutral-300 p-2 text-base"
+              className="rounded-lg border border-neutral-300 p-2 text-base disabled:bg-neutral-100 disabled:text-neutral-400"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Course Rating
             <input
+              disabled={locked}
               type="number"
               step="0.1"
               value={courseForm.courseRating}
               onChange={(e) => setCourseForm((f) => ({ ...f, courseRating: e.target.value }))}
-              className="rounded-lg border border-neutral-300 p-2 text-base"
+              className="rounded-lg border border-neutral-300 p-2 text-base disabled:bg-neutral-100 disabled:text-neutral-400"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Slope Rating
             <input
+              disabled={locked}
               type="number"
               value={courseForm.slopeRating}
               onChange={(e) => setCourseForm((f) => ({ ...f, slopeRating: e.target.value }))}
-              className="rounded-lg border border-neutral-300 p-2 text-base"
+              className="rounded-lg border border-neutral-300 p-2 text-base disabled:bg-neutral-100 disabled:text-neutral-400"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Par
             <input
+              disabled={locked}
               type="number"
               value={courseForm.coursePar}
               onChange={(e) => setCourseForm((f) => ({ ...f, coursePar: e.target.value }))}
-              className="rounded-lg border border-neutral-300 p-2 text-base"
+              className="rounded-lg border border-neutral-300 p-2 text-base disabled:bg-neutral-100 disabled:text-neutral-400"
             />
           </label>
         </div>
@@ -174,20 +178,22 @@ export function CoursesTab() {
                   <div key={h.holeNumber} className="contents">
                     <div className="flex items-center py-0.5">{h.holeNumber}</div>
                     <input
+                      disabled={locked}
                       type="number"
                       min={1}
                       max={18}
                       value={h.holeHandicap}
                       onChange={(e) => updateHoleForm(h.holeNumber, "holeHandicap", e.target.value)}
-                      className="rounded border border-neutral-300 p-1"
+                      className="rounded border border-neutral-300 p-1 disabled:bg-neutral-100 disabled:text-neutral-400"
                     />
                     <input
+                      disabled={locked}
                       type="number"
                       min={3}
                       max={6}
                       value={h.holePar}
                       onChange={(e) => updateHoleForm(h.holeNumber, "holePar", e.target.value)}
-                      className="rounded border border-neutral-300 p-1"
+                      className="rounded border border-neutral-300 p-1 disabled:bg-neutral-100 disabled:text-neutral-400"
                     />
                   </div>
                 ))}
@@ -202,13 +208,15 @@ export function CoursesTab() {
           {saveMsg}
         </p>
       )}
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white disabled:bg-neutral-300 lg:max-w-xs"
-      >
-        {saving ? "Saving…" : "Save Course"}
-      </button>
+      {!locked && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white disabled:bg-neutral-300 lg:max-w-xs"
+        >
+          {saving ? "Saving…" : "Save Course"}
+        </button>
+      )}
     </div>
   );
 }

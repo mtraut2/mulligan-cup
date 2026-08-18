@@ -12,7 +12,7 @@ import {
 import { roundLabel } from "@/lib/supabase/mappers";
 import { useMemo, useState } from "react";
 
-export function GroupsTab() {
+export function GroupsTab({ locked }: { locked: boolean }) {
   const { rounds, groups, groupMembers, players } = useAppData();
   const sortedRounds = useMemo(
     () => [...rounds].sort((a, b) => a.round_number - b.round_number),
@@ -71,23 +71,25 @@ export function GroupsTab() {
         ))}
       </div>
 
-      <div className="flex gap-2 md:max-w-sm">
-        <button
-          onClick={handleAddGroup}
-          className="flex-1 rounded-lg border border-green-700 py-2 text-sm font-semibold text-green-700"
-        >
-          + Add Group
-        </button>
-        {previousRound && (
+      {!locked && (
+        <div className="flex gap-2 md:max-w-sm">
           <button
-            onClick={handleCopyPrevious}
-            disabled={busy}
-            className="flex-1 rounded-lg border border-neutral-300 py-2 text-sm font-medium text-neutral-600"
+            onClick={handleAddGroup}
+            className="flex-1 rounded-lg border border-green-700 py-2 text-sm font-semibold text-green-700"
           >
-            Copy {roundLabel(previousRound)}
+            + Add Group
           </button>
-        )}
-      </div>
+          {previousRound && (
+            <button
+              onClick={handleCopyPrevious}
+              disabled={busy}
+              className="flex-1 rounded-lg border border-neutral-300 py-2 text-sm font-medium text-neutral-600"
+            >
+              Copy {roundLabel(previousRound)}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4 xl:grid-cols-3">
         {roundGroups.map((g) => {
@@ -98,20 +100,23 @@ export function GroupsTab() {
             <div key={g.id} className="rounded-xl border border-neutral-200 p-3">
               <div className="mb-2 flex items-center gap-2">
                 <input
+                  disabled={locked}
                   defaultValue={g.label}
                   onBlur={(e) => {
                     if (e.target.value.trim() && e.target.value !== g.label) {
                       updateGroupLabel(g.id, e.target.value.trim());
                     }
                   }}
-                  className="flex-1 rounded-lg border border-neutral-300 p-2 text-sm font-semibold"
+                  className="flex-1 rounded-lg border border-neutral-300 p-2 text-sm font-semibold disabled:bg-neutral-100 disabled:text-neutral-400"
                 />
-                <button
-                  onClick={() => deleteGroup(g.id)}
-                  className="text-xs text-red-500 underline"
-                >
-                  Delete
-                </button>
+                {!locked && (
+                  <button
+                    onClick={() => deleteGroup(g.id)}
+                    className="text-xs text-red-500 underline"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {sortedPlayers.map((p) => {
@@ -119,10 +124,11 @@ export function GroupsTab() {
                   return (
                     <button
                       key={p.id}
+                      disabled={locked}
                       onClick={() =>
                         active ? removeGroupMember(g.id, p.id) : addGroupMember(g.id, p.id)
                       }
-                      className={`rounded-full border px-2.5 py-1 text-xs ${
+                      className={`rounded-full border px-2.5 py-1 text-xs disabled:pointer-events-none ${
                         active
                           ? "border-green-600 bg-green-600 text-white"
                           : "border-neutral-300 text-neutral-500"
