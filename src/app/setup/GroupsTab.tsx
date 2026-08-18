@@ -57,7 +57,7 @@ export function GroupsTab() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-1 rounded-lg bg-neutral-100 p-1">
+      <div className="flex gap-1 rounded-lg bg-neutral-100 p-1 md:max-w-sm">
         {sortedRounds.map((r) => (
           <button
             key={r.id}
@@ -71,7 +71,7 @@ export function GroupsTab() {
         ))}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 md:max-w-sm">
         <button
           onClick={handleAddGroup}
           className="flex-1 rounded-lg border border-green-700 py-2 text-sm font-semibold text-green-700"
@@ -89,7 +89,7 @@ export function GroupsTab() {
         )}
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4 xl:grid-cols-3">
         {roundGroups.map((g) => {
           const memberIds = new Set(
             groupMembers.filter((m) => m.group_id === g.id).map((m) => m.player_id)

@@ -10,9 +10,36 @@ import {
 import { useAppData } from "@/lib/store/AppDataContext";
 import { roundLabel, toCourseDef } from "@/lib/supabase/mappers";
 import { upsertHoleScore } from "@/lib/supabase/data";
-import { useEffect, useMemo, useState } from "react";
+import { PlayerRow } from "@/lib/supabase/types";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const ALL_PLAYERS = "all";
+
+type FieldKey = "score" | "putts" | "lostBalls" | "ladiesTees";
+interface EntryForm {
+  score: string;
+  putts: string;
+  lostBalls: string;
+  ladiesTees: string;
+}
+const EMPTY_FORM: EntryForm = { score: "", putts: "", lostBalls: "", ladiesTees: "" };
+const FIELD_ORDER: FieldKey[] = ["score", "putts", "lostBalls", "ladiesTees"];
+const FIELD_LABELS: Record<FieldKey, string> = {
+  score: "Score",
+  putts: "Putts",
+  lostBalls: "Lost Balls",
+  ladiesTees: "Ladies Tees",
+};
+
+function isBlank(f: EntryForm): boolean {
+  return f.score === "" && f.putts === "" && f.lostBalls === "" && f.ladiesTees === "";
+}
+function isComplete(f: EntryForm): boolean {
+  return f.score !== "" && f.putts !== "" && f.lostBalls !== "" && f.ladiesTees !== "";
+}
+function missingFields(f: EntryForm): FieldKey[] {
+  return FIELD_ORDER.filter((k) => f[k] === "");
+}
 
 export default function EnterPage() {
   const { loading, error, players, rounds, holes, groups, groupMembers, holeScores } =
@@ -24,6 +51,23 @@ export default function EnterPage() {
   const [holeNumber, setHoleNumber] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Locally-staged, not-yet-saved field values, keyed by `${roundId}:${playerId}:${holeNumber}`.
+  const [staged, setStaged] = useState<Record<string, EntryForm>>({});
+  // Holes that have already auto-advanced once for a given round+group, so re-saving an
+  // edit to an already-complete hole doesn't advance again.
+  const [advancedHoles, setAdvancedHoles] = useState<Set<string>>(new Set());
+
+  const scoreRef = useRef<HTMLInputElement>(null);
+  const puttsRef = useRef<HTMLInputElement>(null);
+  const lostBallsRef = useRef<HTMLInputElement>(null);
+  const ladiesTeesRef = useRef<HTMLInputElement>(null);
+  const fieldRefs: Record<FieldKey, React.RefObject<HTMLInputElement>> = {
+    score: scoreRef,
+    putts: puttsRef,
+    lostBalls: lostBallsRef,
+    ladiesTees: ladiesTeesRef,
+  };
 
   const sortedRounds = useMemo(
     () => [...rounds].sort((a, b) => a.round_number - b.round_number),
@@ -48,6 +92,10 @@ export default function EnterPage() {
       setGroupFilter(ALL_PLAYERS);
     }
   }, [roundGroups, groupFilter]);
+
+  // A specific cart/group is selected -> "group entry" (staged, all-players Save).
+  // "All Players" is selected -> a single player entering just their own score.
+  const isGroupMode = groupFilter !== ALL_PLAYERS;
 
   const visiblePlayers = useMemo(() => {
     if (groupFilter === ALL_PLAYERS) {
@@ -74,41 +122,105 @@ export default function EnterPage() {
   const player = players.find((p) => p.id === playerId) ?? null;
   const hole = course?.holes.find((h) => h.holeNumber === holeNumber) ?? null;
 
-  const ch =
-    player && course
-      ? courseHandicap(player.handicap, course.slopeRating, course.courseRating, course.coursePar)
-      : 0;
-  const strokes = hole ? strokesForHole(ch, hole.holeHandicap) : 0;
+  const roundScores = useMemo(
+    () => holeScores.filter((s) => s.round_id === roundId),
+    [holeScores, roundId]
+  );
+  const scoreLookup = useMemo(() => {
+    const m = new Map<string, (typeof roundScores)[number]>();
+    for (const s of roundScores) m.set(`${s.player_id}:${s.hole_number}`, s);
+    return m;
+  }, [roundScores]);
+
+  function formKey(pid: string, hn: number): string {
+    return `${roundId}:${pid}:${hn}`;
+  }
+
+  function effectiveForm(pid: string, hn: number): EntryForm {
+    const key = formKey(pid, hn);
+    if (staged[key]) return staged[key];
+    const existing = scoreLookup.get(`${pid}:${hn}`);
+    if (existing) {
+      return {
+        score: String(existing.score),
+        putts: String(existing.putts),
+        lostBalls: String(existing.lost_balls),
+        ladiesTees: String(existing.ladies_tees),
+      };
+    }
+    return EMPTY_FORM;
+  }
 
   const playerHoleScores = useMemo(
-    () => holeScores.filter((s) => s.round_id === roundId && s.player_id === playerId),
-    [holeScores, roundId, playerId]
+    () => roundScores.filter((s) => s.player_id === playerId),
+    [roundScores, playerId]
   );
-  const existing = playerHoleScores.find((s) => s.hole_number === holeNumber) ?? null;
   const filledHoleNumbers = new Set(playerHoleScores.map((s) => s.hole_number));
 
-  const [form, setForm] = useState({ score: "", putts: "", lostBalls: "0", ladiesTees: "0" });
+  const currentForm = playerId ? effectiveForm(playerId, holeNumber) : EMPTY_FORM;
 
-  useEffect(() => {
-    setForm({
-      score: existing ? String(existing.score) : "",
-      putts: existing ? String(existing.putts) : "",
-      lostBalls: existing ? String(existing.lost_balls) : "0",
-      ladiesTees: existing ? String(existing.ladies_tees) : "0",
-    });
-    setSaveError(null);
-  }, [existing?.id, roundId, playerId, holeNumber]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const scoreNum = Number(form.score);
-  const hasValidScore = form.score !== "" && scoreNum > 0;
+  const scoreNum = Number(currentForm.score);
+  const hasValidScore = currentForm.score !== "" && scoreNum > 0;
+  const strokes =
+    player && course && hole
+      ? strokesForHole(
+          courseHandicap(player.handicap, course.slopeRating, course.courseRating, course.coursePar),
+          hole.holeHandicap
+        )
+      : 0;
   const netHoleScore = hasValidScore ? scoreNum - strokes : null;
   const outcome =
     hasValidScore && hole && netHoleScore !== null
       ? classifyHoleOutcome(netHoleScore, hole.holePar)
       : null;
 
-  async function handleSave() {
-    if (!roundId || !playerId || !hasValidScore || form.putts === "") return;
+  function updateField(key: FieldKey, rawValue: string) {
+    if (!playerId) return;
+    const digits = rawValue.replace(/[^0-9]/g, "");
+    const key_ = formKey(playerId, holeNumber);
+    const base = effectiveForm(playerId, holeNumber);
+    const next: EntryForm = { ...base, [key]: digits };
+    setStaged((prev) => ({ ...prev, [key_]: next }));
+    setSaveError(null);
+
+    // Single-digit auto-advance within this player's row (PIN-style). A field that already
+    // has 2+ digits stops auto-advancing so the scorer can finish typing a 2-digit value.
+    if (digits.length === 1) {
+      const idx = FIELD_ORDER.indexOf(key);
+      const next_ = FIELD_ORDER[idx + 1];
+      if (next_) fieldRefs[next_].current?.focus();
+    }
+  }
+
+  function handleFieldFocus(e: React.FocusEvent<HTMLInputElement>) {
+    const el = e.target;
+    // Give the on-screen keyboard time to animate in before scrolling the field into view,
+    // so the active field stays visible above it without a jarring scroll jump.
+    setTimeout(() => {
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 150);
+  }
+
+  function gotoPlayer(delta: number) {
+    if (visiblePlayers.length === 0) return;
+    const idx = visiblePlayers.findIndex((p) => p.id === playerId);
+    const nextIdx = (idx + delta + visiblePlayers.length) % visiblePlayers.length;
+    setPlayerId(visiblePlayers[nextIdx].id);
+    setSaveError(null);
+  }
+
+  async function handleSingleSave() {
+    if (!roundId || !playerId) return;
+    const f = effectiveForm(playerId, holeNumber);
+    const missing = missingFields(f);
+    if (missing.length > 0 || Number(f.score) <= 0) {
+      setSaveError(
+        `Missing: ${(missing.length > 0 ? missing : (["score"] as FieldKey[]))
+          .map((k) => FIELD_LABELS[k])
+          .join(", ")}`
+      );
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
@@ -116,12 +228,71 @@ export default function EnterPage() {
         round_id: roundId,
         player_id: playerId,
         hole_number: holeNumber,
-        score: scoreNum,
-        putts: Number(form.putts),
-        lost_balls: Number(form.lostBalls || 0),
-        ladies_tees: Number(form.ladiesTees || 0),
+        score: Number(f.score),
+        putts: Number(f.putts),
+        lost_balls: Number(f.lostBalls),
+        ladies_tees: Number(f.ladiesTees),
       });
       if (holeNumber < 18) setHoleNumber(holeNumber + 1);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleGroupSave() {
+    if (!roundId) return;
+    setSaveError(null);
+
+    const invalid: { player: PlayerRow; missing: FieldKey[] }[] = [];
+    const toSave: { player: PlayerRow; form: EntryForm }[] = [];
+
+    for (const p of visiblePlayers) {
+      const f = effectiveForm(p.id, holeNumber);
+      if (isBlank(f)) continue;
+      const missing = missingFields(f);
+      if (missing.length > 0) {
+        invalid.push({ player: p, missing });
+      } else {
+        toSave.push({ player: p, form: f });
+      }
+    }
+
+    if (invalid.length > 0) {
+      setSaveError(
+        invalid
+          .map((i) => `${i.player.name}: missing ${i.missing.map((k) => FIELD_LABELS[k]).join(", ")}`)
+          .join(" · ")
+      );
+      return;
+    }
+    if (toSave.length === 0) return;
+
+    setSaving(true);
+    try {
+      await Promise.all(
+        toSave.map(({ player: p, form: f }) =>
+          upsertHoleScore({
+            round_id: roundId,
+            player_id: p.id,
+            hole_number: holeNumber,
+            score: Number(f.score),
+            putts: Number(f.putts),
+            lost_balls: Number(f.lostBalls),
+            ladies_tees: Number(f.ladiesTees),
+          })
+        )
+      );
+
+      const allComplete =
+        visiblePlayers.length > 0 &&
+        visiblePlayers.every((p) => isComplete(effectiveForm(p.id, holeNumber)));
+      const advanceKey = `${roundId}:${groupFilter}:${holeNumber}`;
+      if (allComplete && !advancedHoles.has(advanceKey)) {
+        setAdvancedHoles((prev) => new Set(prev).add(advanceKey));
+        if (holeNumber < 18) setHoleNumber(holeNumber + 1);
+      }
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -143,8 +314,10 @@ export default function EnterPage() {
     );
   }
 
+  const singleSaveDisabled = saving || !isComplete(currentForm) || !hasValidScore;
+
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-3 p-3 md:mx-auto md:w-full md:max-w-lg md:rounded-2xl md:border md:border-neutral-200 md:bg-white md:p-6 md:shadow-sm lg:mt-6">
       <h1 className="px-1 text-lg font-bold">Enter Scores</h1>
 
       {/* Round selector */}
@@ -189,20 +362,6 @@ export default function EnterPage() {
         ))}
       </div>
 
-      {/* Player selector */}
-      <select
-        value={playerId ?? ""}
-        onChange={(e) => setPlayerId(e.target.value)}
-        className="rounded-lg border border-neutral-300 p-2.5 text-base"
-      >
-        {visiblePlayers.length === 0 && <option value="">No players</option>}
-        {visiblePlayers.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
-
       {/* Hole navigator */}
       <div className="grid grid-cols-6 gap-1.5">
         {Array.from({ length: 18 }, (_, i) => i + 1).map((n) => (
@@ -222,57 +381,117 @@ export default function EnterPage() {
         ))}
       </div>
 
+      {/* Player switcher */}
+      <div className="sticky top-0 z-10 -mx-3 bg-white px-3 pb-2 pt-1 md:-mx-6 md:px-6">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => gotoPlayer(-1)}
+            disabled={visiblePlayers.length < 2}
+            aria-label="Previous player"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xl text-neutral-600 disabled:opacity-30"
+          >
+            ‹
+          </button>
+          <span className="flex-1 truncate text-center text-2xl font-bold text-neutral-900">
+            {player ? player.name : "No players"}
+          </span>
+          <button
+            type="button"
+            onClick={() => gotoPlayer(1)}
+            disabled={visiblePlayers.length < 2}
+            aria-label="Next player"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xl text-neutral-600 disabled:opacity-30"
+          >
+            ›
+          </button>
+        </div>
+
+        {isGroupMode && visiblePlayers.length > 0 && (
+          <div className="mt-2 flex justify-center gap-1.5">
+            {visiblePlayers.map((p) => {
+              const f = effectiveForm(p.id, holeNumber);
+              const status = isBlank(f) ? "empty" : isComplete(f) ? "complete" : "partial";
+              const active = p.id === playerId;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPlayerId(p.id)}
+                  title={p.name}
+                  aria-label={p.name}
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    status === "complete"
+                      ? "bg-green-600"
+                      : status === "partial"
+                      ? "bg-amber-500"
+                      : "bg-neutral-300"
+                  } ${active ? "ring-2 ring-offset-1 ring-neutral-400" : ""}`}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {player && hole && (
         <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 p-3">
           <div className="flex items-center justify-between text-sm text-neutral-500">
             <span>
               Hole {holeNumber} · Par {hole.holePar} · Hcp Rank {hole.holeHandicap}
             </span>
-            <span>{player.name}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-sm">
               Score
               <input
+                ref={scoreRef}
                 type="number"
                 inputMode="numeric"
                 min={1}
-                value={form.score}
-                onChange={(e) => setForm((f) => ({ ...f, score: e.target.value }))}
+                value={currentForm.score}
+                onChange={(e) => updateField("score", e.target.value)}
+                onFocus={handleFieldFocus}
                 className="rounded-lg border border-neutral-300 p-2.5 text-lg"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
               Putts
               <input
+                ref={puttsRef}
                 type="number"
                 inputMode="numeric"
                 min={0}
-                value={form.putts}
-                onChange={(e) => setForm((f) => ({ ...f, putts: e.target.value }))}
+                value={currentForm.putts}
+                onChange={(e) => updateField("putts", e.target.value)}
+                onFocus={handleFieldFocus}
                 className="rounded-lg border border-neutral-300 p-2.5 text-lg"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
               Lost Balls
               <input
+                ref={lostBallsRef}
                 type="number"
                 inputMode="numeric"
                 min={0}
-                value={form.lostBalls}
-                onChange={(e) => setForm((f) => ({ ...f, lostBalls: e.target.value }))}
+                value={currentForm.lostBalls}
+                onChange={(e) => updateField("lostBalls", e.target.value)}
+                onFocus={handleFieldFocus}
                 className="rounded-lg border border-neutral-300 p-2.5 text-lg"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
               Ladies Tees
               <input
+                ref={ladiesTeesRef}
                 type="number"
                 inputMode="numeric"
                 min={0}
-                value={form.ladiesTees}
-                onChange={(e) => setForm((f) => ({ ...f, ladiesTees: e.target.value }))}
+                value={currentForm.ladiesTees}
+                onChange={(e) => updateField("ladiesTees", e.target.value)}
+                onFocus={handleFieldFocus}
                 className="rounded-lg border border-neutral-300 p-2.5 text-lg"
               />
             </label>
@@ -297,13 +516,29 @@ export default function EnterPage() {
 
           {saveError && <p className="text-sm text-red-600">{saveError}</p>}
 
-          <button
-            onClick={handleSave}
-            disabled={!hasValidScore || form.putts === "" || saving}
-            className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white disabled:bg-neutral-300"
-          >
-            {saving ? "Saving…" : holeNumber < 18 ? "Save & Next Hole" : "Save"}
-          </button>
+          {isGroupMode ? (
+            <>
+              <button
+                onClick={handleGroupSave}
+                disabled={saving}
+                className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white disabled:bg-neutral-300"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+              <p className="text-center text-[11px] text-neutral-400">
+                Saves everyone&apos;s entered scores for this hole. Moves to the next hole once
+                the whole group is complete.
+              </p>
+            </>
+          ) : (
+            <button
+              onClick={handleSingleSave}
+              disabled={singleSaveDisabled}
+              className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white disabled:bg-neutral-300"
+            >
+              {saving ? "Saving…" : holeNumber < 18 ? "Save & Next Hole" : "Save"}
+            </button>
+          )}
         </div>
       )}
     </div>

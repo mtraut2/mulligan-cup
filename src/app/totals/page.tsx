@@ -46,11 +46,25 @@ export default function TotalsPage() {
   if (loading) return <div className="p-4 text-center text-neutral-500">Loading…</div>;
   if (error) return <div className="p-4 text-center text-red-600">{error}</div>;
 
+  if (gameConfig && gameConfig.totals_visible === false) {
+    return (
+      <div className="flex flex-col gap-3 p-3 md:p-6">
+        <h1 className="px-1 text-lg font-bold">Weekend Totals</h1>
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-neutral-200 p-8 text-center">
+          <span className="text-3xl">🤫</span>
+          <p className="text-sm text-neutral-500">
+            Totals will be revealed at the end of the weekend.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-3 p-3 md:p-6">
       <h1 className="px-1 text-lg font-bold">Weekend Totals</h1>
 
-      <div className="rounded-xl bg-green-700 p-4 text-white">
+      <div className="rounded-xl bg-green-700 p-4 text-white md:max-w-sm">
         <p className="text-xs uppercase tracking-wide text-green-100">Total Pot</p>
         <p className="text-3xl font-bold">{formatMoney(pot)}</p>
         <p className="mt-1 text-xs text-green-100">
@@ -58,33 +72,37 @@ export default function TotalsPage() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-neutral-200">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs uppercase text-neutral-500">
             <tr>
-              <th className="px-2 py-2">Place</th>
-              <th className="px-2 py-2">Player</th>
-              <th className="px-2 py-2 text-right">Rounds</th>
-              <th className="px-2 py-2 text-right">Points</th>
-              <th className="px-2 py-2 text-right">Owed</th>
-              <th className="px-2 py-2 text-right">Payout</th>
-              <th className="px-2 py-2 text-right">Net</th>
+              <th className="px-2 py-2 md:px-4 md:py-3">Place</th>
+              <th className="px-2 py-2 md:px-4 md:py-3">Player</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Rounds</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Points</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Owed</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Payout</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Net</th>
             </tr>
           </thead>
           <tbody>
             {weekend.map((w) => (
-              <tr key={w.playerId} className="border-t border-neutral-100">
-                <td className="px-2 py-2 font-medium">
+              <tr key={w.playerId} className="border-t border-neutral-100 hover:bg-neutral-50">
+                <td className="px-2 py-2 font-medium md:px-4 md:py-3">
                   {w.tied ? "T-" : ""}
                   {w.place}
                 </td>
-                <td className="px-2 py-2">{playerName(w.playerId)}</td>
-                <td className="px-2 py-2 text-right">{w.roundsPlayed}/3</td>
-                <td className="px-2 py-2 text-right font-semibold">{w.totalPoints}</td>
-                <td className="px-2 py-2 text-right">{formatMoney(w.totalMoneyOwed)}</td>
-                <td className="px-2 py-2 text-right">{formatMoney(w.payout)}</td>
+                <td className="px-2 py-2 md:px-4 md:py-3">{playerName(w.playerId)}</td>
+                <td className="px-2 py-2 text-right md:px-4 md:py-3">{w.roundsPlayed}/3</td>
+                <td className="px-2 py-2 text-right font-semibold md:px-4 md:py-3">
+                  {w.totalPoints}
+                </td>
+                <td className="px-2 py-2 text-right md:px-4 md:py-3">
+                  {formatMoney(w.totalMoneyOwed)}
+                </td>
+                <td className="px-2 py-2 text-right md:px-4 md:py-3">{formatMoney(w.payout)}</td>
                 <td
-                  className={`px-2 py-2 text-right font-semibold ${
+                  className={`px-2 py-2 text-right font-semibold md:px-4 md:py-3 ${
                     w.netEarnings >= 0 ? "text-green-700" : "text-red-600"
                   }`}
                 >

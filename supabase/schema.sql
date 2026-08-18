@@ -105,6 +105,9 @@ create table if not exists game_config (
   placement_points jsonb not null default '[16,14,12,10,9,8,7,6,5,4,3,2,1]'::jsonb,
   buy_in numeric not null default 50,
   admin_passcode text not null default '1234',
+  -- Admin-only toggle: when false, the Totals tab stays in nav but shows a placeholder
+  -- instead of real data.
+  totals_visible boolean not null default true,
   updated_at timestamptz not null default now()
 );
 

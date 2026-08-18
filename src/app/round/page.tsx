@@ -51,10 +51,10 @@ export default function RoundPage() {
   }
 
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-3 p-3 md:p-6">
       <h1 className="px-1 text-lg font-bold">Round Summary</h1>
 
-      <div className="flex gap-1 rounded-lg bg-neutral-100 p-1">
+      <div className="flex gap-1 rounded-lg bg-neutral-100 p-1 md:max-w-sm">
         {sortedRounds.map((r) => (
           <button
             key={r.id}
@@ -80,17 +80,17 @@ export default function RoundPage() {
         </p>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-neutral-200">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs uppercase text-neutral-500">
             <tr>
-              <th className="px-2 py-2">Place</th>
-              <th className="px-2 py-2">Player</th>
-              <th className="px-2 py-2 text-right">Net</th>
-              <th className="px-2 py-2 text-right">Golf</th>
-              <th className="px-2 py-2 text-right">Place Pts</th>
-              <th className="px-2 py-2 text-right">Total</th>
-              <th className="px-2 py-2 text-right">Owed</th>
+              <th className="px-2 py-2 md:px-4 md:py-3">Place</th>
+              <th className="px-2 py-2 md:px-4 md:py-3">Player</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Net</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Golf</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Place Pts</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Total</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Owed</th>
             </tr>
           </thead>
           <tbody>
@@ -100,23 +100,27 @@ export default function RoundPage() {
                   onClick={() =>
                     setExpandedPlayerId(expandedPlayerId === s.playerId ? null : s.playerId)
                   }
-                  className="cursor-pointer border-t border-neutral-100 active:bg-neutral-50"
+                  className="cursor-pointer border-t border-neutral-100 hover:bg-neutral-50 active:bg-neutral-50"
                 >
-                  <td className="px-2 py-2 font-medium">
+                  <td className="px-2 py-2 font-medium md:px-4 md:py-3">
                     {s.tied ? "T-" : ""}
                     {s.place}
                   </td>
-                  <td className="px-2 py-2">{playerName(s.playerId)}</td>
-                  <td className="px-2 py-2 text-right">{s.netScore}</td>
-                  <td className="px-2 py-2 text-right">{s.golfPoints}</td>
-                  <td className="px-2 py-2 text-right">{s.placementPoints}</td>
-                  <td className="px-2 py-2 text-right font-semibold">{s.totalPoints}</td>
-                  <td className="px-2 py-2 text-right">{formatMoney(s.moneyOwed)}</td>
+                  <td className="px-2 py-2 md:px-4 md:py-3">{playerName(s.playerId)}</td>
+                  <td className="px-2 py-2 text-right md:px-4 md:py-3">{s.netScore}</td>
+                  <td className="px-2 py-2 text-right md:px-4 md:py-3">{s.golfPoints}</td>
+                  <td className="px-2 py-2 text-right md:px-4 md:py-3">{s.placementPoints}</td>
+                  <td className="px-2 py-2 text-right font-semibold md:px-4 md:py-3">
+                    {s.totalPoints}
+                  </td>
+                  <td className="px-2 py-2 text-right md:px-4 md:py-3">
+                    {formatMoney(s.moneyOwed)}
+                  </td>
                 </tr>
                 {expandedPlayerId === s.playerId && (
                   <tr className="border-t border-neutral-100 bg-neutral-50">
-                    <td colSpan={7} className="px-3 py-3">
-                      <div className="grid grid-cols-2 gap-4">
+                    <td colSpan={7} className="px-3 py-3 md:px-4">
+                      <div className="grid grid-cols-2 gap-4 md:max-w-xl md:grid-cols-2 lg:max-w-2xl">
                         <div>
                           <h3 className="mb-1 text-xs font-semibold uppercase text-neutral-500">
                             Golf Points

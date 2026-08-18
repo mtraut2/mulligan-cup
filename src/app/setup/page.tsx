@@ -40,7 +40,7 @@ export default function SetupPage() {
   if (error) return <div className="p-4 text-center text-red-600">{error}</div>;
 
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-3 p-3 md:p-6">
       <div className="flex items-center justify-between px-1">
         <h1 className="text-lg font-bold">Setup</h1>
         {unlocked && (
@@ -56,7 +56,7 @@ export default function SetupPage() {
         )}
       </div>
 
-      <div className="flex gap-1 overflow-x-auto rounded-lg bg-neutral-100 p-1">
+      <div className="flex gap-1 overflow-x-auto rounded-lg bg-neutral-100 p-1 md:max-w-md">
         {TABS.map((t) => (
           <button
             key={t}

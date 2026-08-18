@@ -29,9 +29,12 @@ export function PlayersTab() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-3">
+      <div className="rounded-xl border border-neutral-200 p-3 lg:columns-2 lg:gap-6">
         {sortedPlayers.map((p) => (
-          <div key={p.id} className="flex items-center gap-2 border-b border-neutral-100 pb-2 last:border-0 last:pb-0">
+          <div
+            key={p.id}
+            className="flex items-center gap-2 border-b border-neutral-100 pb-2 pt-2 first:pt-0 last:border-0 last:pb-0 lg:break-inside-avoid"
+          >
             <input
               defaultValue={p.name}
               onBlur={(e) => {
@@ -66,7 +69,7 @@ export function PlayersTab() {
         )}
       </div>
 
-      <form onSubmit={handleAdd} className="flex items-center gap-2">
+      <form onSubmit={handleAdd} className="flex items-center gap-2 md:max-w-sm">
         <input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}

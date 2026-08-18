@@ -64,5 +64,6 @@ export interface GameConfigRow {
   placement_points: number[];
   buy_in: number;
   admin_passcode: string;
+  totals_visible: boolean;
   updated_at: string;
 }

@@ -100,7 +100,7 @@ export function CoursesTab() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-1 rounded-lg bg-neutral-100 p-1">
+      <div className="flex gap-1 rounded-lg bg-neutral-100 p-1 md:max-w-sm">
         {sortedRounds.map((r) => (
           <button
             key={r.id}
@@ -114,77 +114,86 @@ export function CoursesTab() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <label className="col-span-2 flex flex-col gap-1 text-sm">
-          Course Name
-          <input
-            value={courseForm.courseName}
-            onChange={(e) => setCourseForm((f) => ({ ...f, courseName: e.target.value }))}
-            className="rounded-lg border border-neutral-300 p-2 text-base"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Course Rating
-          <input
-            type="number"
-            step="0.1"
-            value={courseForm.courseRating}
-            onChange={(e) => setCourseForm((f) => ({ ...f, courseRating: e.target.value }))}
-            className="rounded-lg border border-neutral-300 p-2 text-base"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Slope Rating
-          <input
-            type="number"
-            value={courseForm.slopeRating}
-            onChange={(e) => setCourseForm((f) => ({ ...f, slopeRating: e.target.value }))}
-            className="rounded-lg border border-neutral-300 p-2 text-base"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Par
-          <input
-            type="number"
-            value={courseForm.coursePar}
-            onChange={(e) => setCourseForm((f) => ({ ...f, coursePar: e.target.value }))}
-            className="rounded-lg border border-neutral-300 p-2 text-base"
-          />
-        </label>
-      </div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="grid grid-cols-2 gap-2 lg:w-72 lg:shrink-0">
+          <label className="col-span-2 flex flex-col gap-1 text-sm">
+            Course Name
+            <input
+              value={courseForm.courseName}
+              onChange={(e) => setCourseForm((f) => ({ ...f, courseName: e.target.value }))}
+              className="rounded-lg border border-neutral-300 p-2 text-base"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Course Rating
+            <input
+              type="number"
+              step="0.1"
+              value={courseForm.courseRating}
+              onChange={(e) => setCourseForm((f) => ({ ...f, courseRating: e.target.value }))}
+              className="rounded-lg border border-neutral-300 p-2 text-base"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Slope Rating
+            <input
+              type="number"
+              value={courseForm.slopeRating}
+              onChange={(e) => setCourseForm((f) => ({ ...f, slopeRating: e.target.value }))}
+              className="rounded-lg border border-neutral-300 p-2 text-base"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Par
+            <input
+              type="number"
+              value={courseForm.coursePar}
+              onChange={(e) => setCourseForm((f) => ({ ...f, coursePar: e.target.value }))}
+              className="rounded-lg border border-neutral-300 p-2 text-base"
+            />
+          </label>
+        </div>
 
-      <div>
-        <h2 className="mb-1 text-sm font-semibold">Holes</h2>
-        {duplicateHandicaps && (
-          <p className="mb-1 text-xs text-orange-600">
-            Warning: hole handicap ranks should be unique 1-18.
-          </p>
-        )}
-        <div className="grid grid-cols-[auto_1fr_1fr] gap-x-2 gap-y-1 text-sm">
-          <div className="text-xs font-semibold uppercase text-neutral-400">Hole</div>
-          <div className="text-xs font-semibold uppercase text-neutral-400">Hcp Rank</div>
-          <div className="text-xs font-semibold uppercase text-neutral-400">Par</div>
-          {holeForms.map((h) => (
-            <div key={h.holeNumber} className="contents">
-              <div className="flex items-center py-0.5">{h.holeNumber}</div>
-              <input
-                type="number"
-                min={1}
-                max={18}
-                value={h.holeHandicap}
-                onChange={(e) => updateHoleForm(h.holeNumber, "holeHandicap", e.target.value)}
-                className="rounded border border-neutral-300 p-1"
-              />
-              <input
-                type="number"
-                min={3}
-                max={6}
-                value={h.holePar}
-                onChange={(e) => updateHoleForm(h.holeNumber, "holePar", e.target.value)}
-                className="rounded border border-neutral-300 p-1"
-              />
-            </div>
-          ))}
+        <div className="flex-1">
+          <h2 className="mb-1 text-sm font-semibold">Holes</h2>
+          {duplicateHandicaps && (
+            <p className="mb-1 text-xs text-orange-600">
+              Warning: hole handicap ranks should be unique 1-18.
+            </p>
+          )}
+          <div className="flex flex-col gap-4 lg:flex-row lg:gap-8">
+            {[holeForms.slice(0, 9), holeForms.slice(9)].map((column, colIdx) => (
+              <div
+                key={colIdx}
+                className="grid grid-cols-[auto_1fr_1fr] gap-x-2 gap-y-1 text-sm lg:flex-1"
+              >
+                <div className="text-xs font-semibold uppercase text-neutral-400">Hole</div>
+                <div className="text-xs font-semibold uppercase text-neutral-400">Hcp Rank</div>
+                <div className="text-xs font-semibold uppercase text-neutral-400">Par</div>
+                {column.map((h) => (
+                  <div key={h.holeNumber} className="contents">
+                    <div className="flex items-center py-0.5">{h.holeNumber}</div>
+                    <input
+                      type="number"
+                      min={1}
+                      max={18}
+                      value={h.holeHandicap}
+                      onChange={(e) => updateHoleForm(h.holeNumber, "holeHandicap", e.target.value)}
+                      className="rounded border border-neutral-300 p-1"
+                    />
+                    <input
+                      type="number"
+                      min={3}
+                      max={6}
+                      value={h.holePar}
+                      onChange={(e) => updateHoleForm(h.holeNumber, "holePar", e.target.value)}
+                      className="rounded border border-neutral-300 p-1"
+                    />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -196,7 +205,7 @@ export function CoursesTab() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white disabled:bg-neutral-300"
+        className="rounded-lg bg-green-700 py-3 text-base font-semibold text-white disabled:bg-neutral-300 lg:max-w-xs"
       >
         {saving ? "Saving…" : "Save Course"}
       </button>

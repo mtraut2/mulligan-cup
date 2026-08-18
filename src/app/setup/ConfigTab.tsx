@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 type NumericField = Exclude<
   keyof GameConfigRow,
-  "id" | "updated_at" | "admin_passcode" | "placement_points"
+  "id" | "updated_at" | "admin_passcode" | "placement_points" | "totals_visible"
 >;
 
 const GOLF_FIELDS: { key: NumericField; label: string }[] = [
@@ -46,6 +46,7 @@ export function ConfigTab() {
   const [form, setForm] = useState<Record<string, string>>({});
   const [placements, setPlacements] = useState<string[]>([]);
   const [passcode, setPasscode] = useState("");
+  const [totalsVisible, setTotalsVisible] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
@@ -58,6 +59,7 @@ export function ConfigTab() {
     next.buy_in = String(gameConfig.buy_in);
     setForm(next);
     setPasscode(gameConfig.admin_passcode);
+    setTotalsVisible(gameConfig.totals_visible ?? true);
 
     const saved = gameConfig.placement_points ?? [];
     const resized = Array.from({ length: players.length }, (_, i) =>
@@ -77,6 +79,7 @@ export function ConfigTab() {
       const updates: Partial<Omit<GameConfigRow, "id" | "updated_at">> = {
         admin_passcode: passcode,
         placement_points: placements.map(Number),
+        totals_visible: totalsVisible,
       };
       for (const f of [...GOLF_FIELDS, ...MONEY_FIELDS]) {
         (updates as Record<string, number>)[f.key] = Number(form[f.key]);
@@ -95,7 +98,8 @@ export function ConfigTab() {
 
   return (
     <div className="flex flex-col gap-5">
-      <section>
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-8">
+      <section className="lg:flex-1">
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-green-700">Points</h2>
 
         <div className="mb-4">
@@ -146,7 +150,7 @@ export function ConfigTab() {
         </div>
       </section>
 
-      <section>
+      <section className="lg:flex-1">
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-green-700">Money</h2>
 
         <div className="mb-4">
@@ -187,8 +191,35 @@ export function ConfigTab() {
           </div>
         </div>
       </section>
+      </div>
 
-      <div>
+      <div className="lg:max-w-md">
+        <h2 className="mb-1 text-sm font-semibold">Totals Visibility</h2>
+        <label className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
+          <span className="text-neutral-600">
+            {totalsVisible
+              ? "Totals tab shows live weekend totals to everyone."
+              : "Totals tab shows a placeholder message instead of real numbers."}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={totalsVisible}
+            onClick={() => setTotalsVisible((v) => !v)}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+              totalsVisible ? "bg-green-700" : "bg-neutral-300"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                totalsVisible ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </button>
+        </label>
+      </div>
+
+      <div className="lg:max-w-md">
         <h2 className="mb-1 text-sm font-semibold">Admin Passcode</h2>
         <input
           value={passcode}
