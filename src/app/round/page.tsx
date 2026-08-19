@@ -91,6 +91,7 @@ export default function RoundPage() {
               <th className="px-2 py-2 text-right md:px-4 md:py-3">Golf</th>
               <th className="px-2 py-2 text-right md:px-4 md:py-3">Place Pts</th>
               <th className="px-2 py-2 text-right md:px-4 md:py-3">Total</th>
+              <th className="px-2 py-2 text-right md:px-4 md:py-3">Owed</th>
             </tr>
           </thead>
           <tbody>
@@ -127,10 +128,13 @@ export default function RoundPage() {
                   <td className="px-2 py-2 text-right font-semibold md:px-4 md:py-3">
                     {s.totalPoints}
                   </td>
+                  <td className="px-2 py-2 text-right md:px-4 md:py-3">
+                    {formatMoney(s.moneyOwed)}
+                  </td>
                 </tr>
                 {expandedPlayerId === s.playerId && (
                   <tr className="border-t border-neutral-100 bg-neutral-50">
-                    <td colSpan={7} className="px-3 py-3 md:px-4">
+                    <td colSpan={8} className="px-3 py-3 md:px-4">
                       <div className="grid grid-cols-2 gap-4 md:max-w-xl md:grid-cols-2 lg:max-w-2xl">
                         <div>
                           <h3 className="mb-1 text-xs font-semibold uppercase text-neutral-500">
@@ -184,7 +188,7 @@ export default function RoundPage() {
             ))}
             {summaries.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-2 py-6 text-center text-neutral-400">
+                <td colSpan={8} className="px-2 py-6 text-center text-neutral-400">
                   No scores entered yet.
                 </td>
               </tr>
