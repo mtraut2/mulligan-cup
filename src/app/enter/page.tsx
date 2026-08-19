@@ -11,6 +11,7 @@ import { useAppData } from "@/lib/store/AppDataContext";
 import { roundLabel, toCourseDef } from "@/lib/supabase/mappers";
 import { upsertHoleScore } from "@/lib/supabase/data";
 import { PlayerRow } from "@/lib/supabase/types";
+import { clearStoredPlayerId, getStoredPlayerId, setStoredPlayerId } from "@/lib/identity";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const ALL_PLAYERS = "all";
@@ -42,7 +43,7 @@ function missingFields(f: EntryForm): FieldKey[] {
 }
 
 export default function EnterPage() {
-  const { loading, error, players, rounds, holes, groups, groupMembers, holeScores } =
+  const { loading, error, players, rounds, holes, groups, groupMembers, holeScores, gameConfig } =
     useAppData();
 
   const [roundId, setRoundId] = useState<string | null>(null);
@@ -51,6 +52,26 @@ export default function EnterPage() {
   const [holeNumber, setHoleNumber] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // "Who's on this device" — only ever consulted while results are hidden (see `hidden` below).
+  const [identityPlayerId, setIdentityPlayerId] = useState<string | null>(null);
+  const [pickerPlayerId, setPickerPlayerId] = useState<string | null>(null);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState<string | null>(null);
+
+  // Load any identity already claimed on this device, once, on mount.
+  useEffect(() => {
+    setIdentityPlayerId(getStoredPlayerId());
+  }, []);
+
+  // A stored identity can outlive the player it points to (deleted in Setup) — fall back to
+  // "no identity" rather than error or silently misbehave.
+  useEffect(() => {
+    if (identityPlayerId && players.length > 0 && !players.some((p) => p.id === identityPlayerId)) {
+      clearStoredPlayerId();
+      setIdentityPlayerId(null);
+    }
+  }, [players, identityPlayerId]);
 
   // Locally-staged, not-yet-saved field values, keyed by `${roundId}:${playerId}:${holeNumber}`.
   const [staged, setStaged] = useState<Record<string, EntryForm>>({});
@@ -93,19 +114,53 @@ export default function EnterPage() {
     }
   }, [roundGroups, groupFilter]);
 
+  // Results hidden -> Enter Scores is restricted to the identified player's own group(s), for
+  // whichever round is currently selected. Re-derived from roundGroups every render, never
+  // cached, since group membership is only ever meaningful for one specific round in this schema.
+  const hidden = !!gameConfig && !gameConfig.totals_visible;
+  const ownRoundGroups = useMemo(
+    () =>
+      roundGroups.filter((g) =>
+        groupMembers.some((m) => m.group_id === g.id && m.player_id === identityPlayerId)
+      ),
+    [roundGroups, groupMembers, identityPlayerId]
+  );
+  const ownRoundGroupIds = useMemo(() => new Set(ownRoundGroups.map((g) => g.id)), [ownRoundGroups]);
+  const restricted = hidden && !!identityPlayerId;
+  // Identified, but not on any group for this round -> fall back to single-player entry for
+  // just that player, rather than blocking them outright.
+  const restrictedToSelfOnly = restricted && ownRoundGroups.length === 0;
+
+  // The group filter actually in effect for rendering/visibility, after clamping to what's
+  // allowed while restricted. Computed fresh every render (not via a follow-up effect) so a
+  // stale/disallowed `groupFilter` can never flash another group's data before correcting.
+  const effectiveGroupFilter = useMemo(() => {
+    if (restrictedToSelfOnly) return null;
+    if (restricted) {
+      if (groupFilter !== ALL_PLAYERS && ownRoundGroupIds.has(groupFilter)) return groupFilter;
+      return ownRoundGroups[0]?.id ?? null;
+    }
+    return groupFilter;
+  }, [restricted, restrictedToSelfOnly, groupFilter, ownRoundGroupIds, ownRoundGroups]);
+
   // A specific cart/group is selected -> "group entry" (staged, all-players Save).
-  // "All Players" is selected -> a single player entering just their own score.
-  const isGroupMode = groupFilter !== ALL_PLAYERS;
+  // "All Players" (or the self-only fallback) is selected -> a single player entering their
+  // own score.
+  const isGroupMode = effectiveGroupFilter !== null && effectiveGroupFilter !== ALL_PLAYERS;
 
   const visiblePlayers = useMemo(() => {
-    if (groupFilter === ALL_PLAYERS) {
+    if (restrictedToSelfOnly) {
+      const me = players.find((p) => p.id === identityPlayerId);
+      return me ? [me] : [];
+    }
+    if (effectiveGroupFilter === null || effectiveGroupFilter === ALL_PLAYERS) {
       return [...players].sort((a, b) => a.name.localeCompare(b.name));
     }
     const memberIds = new Set(
-      groupMembers.filter((m) => m.group_id === groupFilter).map((m) => m.player_id)
+      groupMembers.filter((m) => m.group_id === effectiveGroupFilter).map((m) => m.player_id)
     );
     return players.filter((p) => memberIds.has(p.id)).sort((a, b) => a.name.localeCompare(b.name));
-  }, [players, groupMembers, groupFilter]);
+  }, [players, groupMembers, effectiveGroupFilter, restrictedToSelfOnly, identityPlayerId]);
 
   // Default/clear the selected player when the visible list changes.
   useEffect(() => {
@@ -209,6 +264,31 @@ export default function EnterPage() {
     setSaveError(null);
   }
 
+  function handlePinSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const candidate = players.find((p) => p.id === pickerPlayerId);
+    if (!candidate) return;
+    // A blank/unset PIN can never be matched, regardless of what's typed here.
+    if (candidate.pin && pinInput === candidate.pin) {
+      setStoredPlayerId(candidate.id);
+      setIdentityPlayerId(candidate.id);
+      setPickerPlayerId(null);
+      setPinInput("");
+      setPinError(null);
+    } else {
+      setPinError(`Incorrect PIN for ${candidate.name}.`);
+      setPinInput("");
+    }
+  }
+
+  function handleSwitchPlayer() {
+    clearStoredPlayerId();
+    setIdentityPlayerId(null);
+    setPickerPlayerId(null);
+    setPinInput("");
+    setPinError(null);
+  }
+
   async function handleSingleSave() {
     if (!roundId || !playerId) return;
     const f = effectiveForm(playerId, holeNumber);
@@ -288,7 +368,7 @@ export default function EnterPage() {
       const allComplete =
         visiblePlayers.length > 0 &&
         visiblePlayers.every((p) => isComplete(effectiveForm(p.id, holeNumber)));
-      const advanceKey = `${roundId}:${groupFilter}:${holeNumber}`;
+      const advanceKey = `${roundId}:${effectiveGroupFilter}:${holeNumber}`;
       if (allComplete && !advancedHoles.has(advanceKey)) {
         setAdvancedHoles((prev) => new Set(prev).add(advanceKey));
         if (holeNumber < 18) setHoleNumber(holeNumber + 1);
@@ -335,32 +415,126 @@ export default function EnterPage() {
         ))}
       </div>
 
-      {/* Group filter */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      {/* Group filter / identity gate */}
+      {hidden && identityPlayerId && (
         <button
-          onClick={() => setGroupFilter(ALL_PLAYERS)}
-          className={`whitespace-nowrap rounded-full border px-3 py-1 text-sm ${
-            groupFilter === ALL_PLAYERS
-              ? "border-green-600 bg-green-600 text-white"
-              : "border-neutral-300 text-neutral-600"
-          }`}
+          type="button"
+          onClick={handleSwitchPlayer}
+          className="self-start text-xs text-neutral-400 underline"
         >
-          All Players
+          Not {players.find((p) => p.id === identityPlayerId)?.name ?? "you"}? Switch player
         </button>
-        {roundGroups.map((g) => (
+      )}
+
+      {hidden && !identityPlayerId ? (
+        <div className="rounded-xl border border-neutral-200 p-3">
+          {!pickerPlayerId ? (
+            <>
+              <p className="mb-2 text-sm font-semibold">Who&apos;s on this device?</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[...players]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setPickerPlayerId(p.id);
+                        setPinInput("");
+                        setPinError(null);
+                      }}
+                      className="rounded-lg border border-neutral-300 p-2 text-left text-sm font-medium"
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+              </div>
+            </>
+          ) : (
+            <form onSubmit={handlePinSubmit} className="flex flex-col gap-2">
+              <p className="text-sm text-neutral-600">
+                Enter {players.find((p) => p.id === pickerPlayerId)?.name}&apos;s PIN
+              </p>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                value={pinInput}
+                onChange={(e) => {
+                  setPinInput(e.target.value);
+                  setPinError(null);
+                }}
+                placeholder="PIN"
+                className="rounded-lg border border-neutral-300 p-2.5 text-base"
+              />
+              {pinError && <p className="text-sm text-red-600">{pinError}</p>}
+              <button
+                type="submit"
+                className="rounded-lg bg-green-700 py-2.5 text-sm font-semibold text-white"
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPickerPlayerId(null);
+                  setPinInput("");
+                  setPinError(null);
+                }}
+                className="self-start text-xs text-neutral-400 underline"
+              >
+                ‹ Choose a different name
+              </button>
+            </form>
+          )}
+        </div>
+      ) : hidden && restrictedToSelfOnly ? (
+        <p className="text-xs text-neutral-400">
+          You&apos;re not on a group for this round — entering scores for yourself only.
+        </p>
+      ) : hidden ? (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {ownRoundGroups.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => setGroupFilter(g.id)}
+              className={`whitespace-nowrap rounded-full border px-3 py-1 text-sm ${
+                effectiveGroupFilter === g.id
+                  ? "border-green-600 bg-green-600 text-white"
+                  : "border-neutral-300 text-neutral-600"
+              }`}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex gap-2 overflow-x-auto pb-1">
           <button
-            key={g.id}
-            onClick={() => setGroupFilter(g.id)}
+            onClick={() => setGroupFilter(ALL_PLAYERS)}
             className={`whitespace-nowrap rounded-full border px-3 py-1 text-sm ${
-              groupFilter === g.id
+              groupFilter === ALL_PLAYERS
                 ? "border-green-600 bg-green-600 text-white"
                 : "border-neutral-300 text-neutral-600"
             }`}
           >
-            {g.label}
+            All Players
           </button>
-        ))}
-      </div>
+          {roundGroups.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => setGroupFilter(g.id)}
+              className={`whitespace-nowrap rounded-full border px-3 py-1 text-sm ${
+                groupFilter === g.id
+                  ? "border-green-600 bg-green-600 text-white"
+                  : "border-neutral-300 text-neutral-600"
+              }`}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Hole navigator */}
       <div className="grid grid-cols-6 gap-1.5">

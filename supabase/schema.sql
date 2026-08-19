@@ -13,6 +13,7 @@ create table if not exists players (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   handicap numeric not null default 0,
+  pin text,
   created_at timestamptz not null default now()
 );
 

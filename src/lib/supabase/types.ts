@@ -2,6 +2,7 @@ export interface PlayerRow {
   id: string;
   name: string;
   handicap: number;
+  pin: string | null;
   created_at: string;
 }
 

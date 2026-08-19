@@ -51,9 +51,9 @@ export default function TotalsPage() {
       <div className="flex flex-col gap-3 p-3 md:p-6">
         <h1 className="px-1 text-lg font-bold">Weekend Totals</h1>
         <div className="flex flex-col items-center gap-2 rounded-xl border border-neutral-200 p-8 text-center">
-          <span className="text-3xl">🤫</span>
+          <span className="text-3xl">🏆</span>
           <p className="text-sm text-neutral-500">
-            Totals will be revealed at the end of the weekend.
+            The winner will be revealed at the closing dinner! 🤫
           </p>
         </div>
       </div>

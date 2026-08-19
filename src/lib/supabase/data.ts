@@ -25,6 +25,7 @@ export async function upsertPlayer(player: {
   id?: string;
   name: string;
   handicap: number;
+  pin?: string | null;
 }): Promise<PlayerRow> {
   const { data, error } = await supabase
     .from("players")

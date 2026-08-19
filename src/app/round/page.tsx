@@ -49,6 +49,19 @@ export default function RoundPage() {
   if (sortedRounds.length === 0) {
     return <div className="p-4 text-center text-neutral-500">No rounds set up yet.</div>;
   }
+  if (gameConfig && !gameConfig.totals_visible) {
+    return (
+      <div className="flex flex-col gap-3 p-3 md:p-6">
+        <h1 className="px-1 text-lg font-bold">Round Summary</h1>
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-neutral-200 p-10 text-center">
+          <span className="text-2xl">🏆</span>
+          <p className="text-sm font-semibold text-neutral-700">
+            The winner will be revealed at the closing dinner! 🤫
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3 p-3 md:p-6">

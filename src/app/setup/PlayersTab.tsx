@@ -12,6 +12,7 @@ export function PlayersTab({ locked }: { locked: boolean }) {
   );
   const [newName, setNewName] = useState("");
   const [newHandicap, setNewHandicap] = useState("");
+  const [newPin, setNewPin] = useState("");
   const [adding, setAdding] = useState(false);
 
   async function handleAdd(e: React.FormEvent) {
@@ -19,9 +20,14 @@ export function PlayersTab({ locked }: { locked: boolean }) {
     if (!newName.trim()) return;
     setAdding(true);
     try {
-      await upsertPlayer({ name: newName.trim(), handicap: Number(newHandicap || 0) });
+      await upsertPlayer({
+        name: newName.trim(),
+        handicap: Number(newHandicap || 0),
+        pin: newPin.trim() || null,
+      });
       setNewName("");
       setNewHandicap("");
+      setNewPin("");
     } finally {
       setAdding(false);
     }
@@ -58,6 +64,23 @@ export function PlayersTab({ locked }: { locked: boolean }) {
               }}
               className="w-16 rounded-lg border border-neutral-300 p-2 text-sm disabled:bg-neutral-100 disabled:text-neutral-400"
             />
+            {locked ? (
+              <span className="w-16 rounded-lg border border-neutral-200 bg-neutral-100 p-2 text-center text-xs text-neutral-400">
+                Hidden
+              </span>
+            ) : (
+              <input
+                defaultValue={p.pin ?? ""}
+                placeholder="PIN"
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v !== (p.pin ?? "")) {
+                    upsertPlayer({ id: p.id, name: p.name, handicap: p.handicap, pin: v || null });
+                  }
+                }}
+                className="w-16 rounded-lg border border-neutral-300 p-2 text-center text-sm"
+              />
+            )}
             {!locked && (
               <button
                 onClick={() => deletePlayer(p.id)}
@@ -88,6 +111,12 @@ export function PlayersTab({ locked }: { locked: boolean }) {
             step="0.1"
             placeholder="Hcp"
             className="w-16 rounded-lg border border-neutral-300 p-2 text-sm"
+          />
+          <input
+            value={newPin}
+            onChange={(e) => setNewPin(e.target.value)}
+            placeholder="PIN"
+            className="w-16 rounded-lg border border-neutral-300 p-2 text-center text-sm"
           />
           <button
             type="submit"

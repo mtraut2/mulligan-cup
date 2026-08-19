@@ -198,12 +198,12 @@ export function ConfigTab({ locked }: { locked: boolean }) {
       </div>
 
       <div className="lg:max-w-md">
-        <h2 className="mb-1 text-sm font-semibold">Totals Visibility</h2>
+        <h2 className="mb-1 text-sm font-semibold">Results Visibility</h2>
         <label className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
           <span className="text-neutral-600">
             {totalsVisible
-              ? "Totals tab shows live weekend totals to everyone."
-              : "Totals tab shows a placeholder message instead of real numbers."}
+              ? "Everyone can see every group's live scores on Enter Scores, full Round results, and Totals."
+              : "Enter Scores is limited to each player's own group; Round results and Totals are hidden. Turn this on for the reveal."}
           </span>
           <button
             type="button"
